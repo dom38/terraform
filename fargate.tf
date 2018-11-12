@@ -119,18 +119,64 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = <<DEFINITION
 [
   {
-    "cpu": ${var.fargate_cpu},
-    "image": "${var.app_image}",
-    "memory": ${var.fargate_memory},
-    "name": "app",
+    "cpu": "256",
+    "image": "selenium/hub:latest",
+    "memory": "512"
+    "name": "selenium",
     "networkMode": "awsvpc",
     "portMappings": [
       {
-        "containerPort": ${var.app_port},
-        "hostPort": ${var.app_port}
+        "containerPort": "4444",
+        "hostPort": "4444"
+      },
+    "environment": [
+      {
+          "name": "GRID_MAX_SESSION",
+          "value": "20"
+      },
+      {
+          "name": "TIMEOUT",
+          "value": "1200000"
+      }
+      {
+          "name": "GRID_TIMEOUT",
+          "value": "0"
+      },
+      {
+          "name": "GRID_NEW_SESSION_WAIT_TIMEOUT",
+          "value": "1"
       }
     ]
-  }
+  },
+  {
+    "cpu": "256",
+    "image": "selenium/node-firefox:latest",
+    "memory": "512"
+    "name": "selenium",
+    "networkMode": "awsvpc",
+    "links": [
+                "selenium"
+            ],
+    "environment": [
+      {
+          "name": "NODE_MAX_SESSION",
+          "value": "10"
+      },
+      {
+          "name": "NODE_MAX_INSTANCES",
+          "value": "10"
+      }
+      {
+          "name": "HUB_PORT_4444_TCP_ADDR",
+          "value": "selenium"
+      },
+      {
+          "name": "HUB_PORT_4444_TCP_PORT",
+          "value": "4444"
+      },
+      "privileged" : "true"
+    ]
+  },
 ]
 DEFINITION
 }

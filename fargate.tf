@@ -64,7 +64,7 @@ resource "aws_security_group" "ecs_security_group" {
     protocol        = "tcp"
     from_port       = "80"
     to_port         = "82"
-    security_groups = ["${aws_security_group.lb.id}"]
+    security_groups = ["${aws_security_group.loadbalancer_security_group.id}"]
   }
 
   egress {
@@ -82,24 +82,8 @@ resource "aws_alb" "main" {
 }
 
 resource "aws_alb_target_group" "app_one" {
-  name        = "container_one"
+  name        = "hub"
   port        = 80
-  protocol    = "HTTP"
-  vpc_id      = "${aws_vpc.main.id}"
-  target_type = "ip"
-}
-
-resource "aws_alb_target_group" "app_two" {
-  name        = "container_two"
-  port        = 81
-  protocol    = "HTTP"
-  vpc_id      = "${aws_vpc.main.id}"
-  target_type = "ip"
-}
-
-resource "aws_alb_target_group" "app_three" {
-  name        = "container_three"
-  port        = 82
   protocol    = "HTTP"
   vpc_id      = "${aws_vpc.main.id}"
   target_type = "ip"
@@ -113,22 +97,23 @@ resource "aws_ecs_task_definition" "app" {
   family                   = "app"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "${var.fargate_cpu}"
-  memory                   = "${var.fargate_memory}"
+  cpu                      = "1024"
+  memory                   = "2048"
 
   container_definitions = <<DEFINITION
 [
   {
-    "cpu": "256",
+    "cpu": 256,
     "image": "selenium/hub:latest",
-    "memory": "512"
+    "memory": 512,
     "name": "selenium",
     "networkMode": "awsvpc",
     "portMappings": [
       {
-        "containerPort": "4444",
-        "hostPort": "4444"
-      },
+        "containerPort": 4444,
+        "hostPort": 4444
+      }
+    ],
     "environment": [
       {
           "name": "GRID_MAX_SESSION",
@@ -137,7 +122,7 @@ resource "aws_ecs_task_definition" "app" {
       {
           "name": "TIMEOUT",
           "value": "1200000"
-      }
+      },
       {
           "name": "GRID_TIMEOUT",
           "value": "0"
@@ -149,9 +134,9 @@ resource "aws_ecs_task_definition" "app" {
     ]
   },
   {
-    "cpu": "256",
+    "cpu": 256,
     "image": "selenium/node-firefox:latest",
-    "memory": "512"
+    "memory": 512,
     "name": "selenium",
     "networkMode": "awsvpc",
     "links": [
@@ -165,7 +150,7 @@ resource "aws_ecs_task_definition" "app" {
       {
           "name": "NODE_MAX_INSTANCES",
           "value": "10"
-      }
+      },
       {
           "name": "HUB_PORT_4444_TCP_ADDR",
           "value": "selenium"
@@ -173,10 +158,77 @@ resource "aws_ecs_task_definition" "app" {
       {
           "name": "HUB_PORT_4444_TCP_PORT",
           "value": "4444"
-      },
-      "privileged" : "true"
+      }
+    ],
+    "privileged" : true,
+    "volumes": [
+        {
+            "name": "/dev/shm",
+            "host": {
+                "sourcePath": "/dev/shm"
+            },
+            "dockerVolumeConfiguration": {
+                "scope": "shared",
+                "autoprovision": true,
+                "driver": "",
+                "driverOpts": {
+                    "KeyName": ""
+                },
+                "labels": {
+                    "KeyName": ""
+                }
+            }
+        }
     ]
   },
+  {
+    "cpu": 256,
+    "image": "selenium/node-chrome:latest",
+    "memory": 512,
+    "name": "selenium",
+    "networkMode": "awsvpc",
+    "links": [
+                "selenium"
+            ],
+    "environment": [
+      {
+          "name": "NODE_MAX_SESSION",
+          "value": "10"
+      },
+      {
+          "name": "NODE_MAX_INSTANCES",
+          "value": "10"
+      },
+      {
+          "name": "HUB_PORT_4444_TCP_ADDR",
+          "value": "selenium"
+      },
+      {
+          "name": "HUB_PORT_4444_TCP_PORT",
+          "value": "4444"
+      }
+    ],
+    "privileged" : true,
+    "volumes": [
+        {
+            "name": "/dev/shm",
+            "host": {
+                "sourcePath": "/dev/shm"
+            },
+            "dockerVolumeConfiguration": {
+                "scope": "shared",
+                "autoprovision": true,
+                "driver": "",
+                "driverOpts": {
+                    "KeyName": ""
+                },
+                "labels": {
+                    "KeyName": ""
+                }
+            }
+        }
+    ]
+  }
 ]
 DEFINITION
 }

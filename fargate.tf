@@ -16,7 +16,7 @@ resource "aws_subnet" "main" {
 
   tags {
 
-    Name = "Fargate Subnet"
+    Name = "fargate-subnet"
 
   }
 }
@@ -41,15 +41,15 @@ resource "aws_security_group" "loadbalancer_security_group" {
   vpc_id      = "${aws_vpc.main.id}"
 
   ingress {
-    protocol    = "tcp"
+    protocol    = "-1"
     from_port   = 0
-    to_port     = 65000
+    to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
     from_port = 0
-    to_port   = 65000
+    to_port   = 0
     protocol  = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -90,7 +90,7 @@ resource "aws_alb_target_group" "app_one" {
 }
 
 resource "aws_ecs_cluster" "main" {
-  name = "Selenium Cluster"
+  name = "selenium-cluster"
 }
 
 resource "aws_ecs_task_definition" "app" {
@@ -139,9 +139,12 @@ resource "aws_ecs_task_definition" "app" {
     "memory": 512,
     "name": "selenium",
     "networkMode": "awsvpc",
-    "links": [
-                "selenium:hub"
-            ],
+    "portMappings": [
+      {
+        "containerPort": 4444,
+        "hostPort": 4444
+      }
+    ],
     "environment": [
       {
           "name": "NODE_MAX_SESSION",
@@ -187,9 +190,12 @@ resource "aws_ecs_task_definition" "app" {
     "memory": 512,
     "name": "selenium",
     "networkMode": "awsvpc",
-    "links": [
-                "selenium:hub"
-            ],
+    "portMappings": [
+      {
+        "containerPort": 4444,
+        "hostPort": 4444
+      }
+    ],
     "environment": [
       {
           "name": "NODE_MAX_SESSION",
@@ -232,3 +238,7 @@ resource "aws_ecs_task_definition" "app" {
 ]
 DEFINITION
 }
+
+# "links": [
+#             "selenium:hub"
+#         ],

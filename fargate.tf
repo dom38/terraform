@@ -1,3 +1,5 @@
+data "aws_availability_zones" "available" {}
+
 resource "aws_vpc" "main" {
 
   cidr_block       = "10.0.0.0/16"
@@ -10,15 +12,11 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "main" {
-
-  vpc_id     = "${aws_vpc.main.id}"
-  cidr_block = "10.0.0.0/16"
-
-  tags {
-
-    Name = "fargate-subnet"
-
-  }
+  count                   = 2
+  cidr_block              = "${cidrsubnet(aws_vpc.main.cidr_block, 8, 2 + count.index)}"
+  availability_zone       = "${data.aws_availability_zones.available.names[count.index]}"
+  vpc_id                  = "${aws_vpc.main.id}"
+  map_public_ip_on_launch = true
 }
 
 resource "aws_internet_gateway" "gateway" {
@@ -56,7 +54,7 @@ resource "aws_security_group" "loadbalancer_security_group" {
 }
 
 resource "aws_security_group" "ecs_security_group" {
-  name        = "tf-ecs-tasks"
+  name        = "fargate-security-group"
   description = "allow inbound access from the ALB only"
   vpc_id      = "${aws_vpc.main.id}"
 
@@ -76,7 +74,7 @@ resource "aws_security_group" "ecs_security_group" {
 }
 
 resource "aws_alb" "main" {
-  name            = "tf-ecs-chat"
+  name            = "fargate-application"
   subnets         = ["${aws_subnet.main.*.id}"]
   security_groups = ["${aws_security_group.loadbalancer_security_group.id}"]
 }
@@ -137,14 +135,8 @@ resource "aws_ecs_task_definition" "app" {
     "cpu": 256,
     "image": "selenium/node-firefox:latest",
     "memory": 512,
-    "name": "selenium",
+    "name": "firefox-node",
     "networkMode": "awsvpc",
-    "portMappings": [
-      {
-        "containerPort": 4444,
-        "hostPort": 4444
-      }
-    ],
     "environment": [
       {
           "name": "NODE_MAX_SESSION",
@@ -163,7 +155,7 @@ resource "aws_ecs_task_definition" "app" {
           "value": "4444"
       }
     ],
-    "privileged" : true,
+    "privileged" : false,
     "volumes": [
         {
             "name": "/dev/shm",
@@ -188,14 +180,8 @@ resource "aws_ecs_task_definition" "app" {
     "cpu": 256,
     "image": "selenium/node-chrome:latest",
     "memory": 512,
-    "name": "selenium",
+    "name": "chrome-node",
     "networkMode": "awsvpc",
-    "portMappings": [
-      {
-        "containerPort": 4444,
-        "hostPort": 4444
-      }
-    ],
     "environment": [
       {
           "name": "NODE_MAX_SESSION",
@@ -214,7 +200,7 @@ resource "aws_ecs_task_definition" "app" {
           "value": "4444"
       }
     ],
-    "privileged" : true,
+    "privileged" : false,
     "volumes": [
         {
             "name": "/dev/shm",

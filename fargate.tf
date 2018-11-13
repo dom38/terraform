@@ -140,7 +140,7 @@ resource "aws_ecs_task_definition" "app" {
     "name": "selenium",
     "networkMode": "awsvpc",
     "links": [
-                "selenium"
+                "selenium:hub"
             ],
     "environment": [
       {
@@ -188,7 +188,7 @@ resource "aws_ecs_task_definition" "app" {
     "name": "selenium",
     "networkMode": "awsvpc",
     "links": [
-                "selenium"
+                "selenium:hub"
             ],
     "environment": [
       {

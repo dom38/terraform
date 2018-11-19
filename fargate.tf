@@ -1,13 +1,10 @@
 data "aws_availability_zones" "available" {}
 
 resource "aws_vpc" "main" {
-
-  cidr_block       = "10.0.0.0/16"
+  cidr_block = "10.0.0.0/16"
 
   tags {
-
     Name = "Fargate"
-
   }
 }
 
@@ -20,17 +17,13 @@ resource "aws_subnet" "main" {
 }
 
 resource "aws_internet_gateway" "gateway" {
-
   vpc_id = "${aws_vpc.main.id}"
-
 }
 
 resource "aws_route" "internet_access" {
-
   route_table_id         = "${aws_vpc.main.main_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = "${aws_internet_gateway.gateway.id}"
-
 }
 
 resource "aws_security_group" "loadbalancer_security_group" {
@@ -46,9 +39,9 @@ resource "aws_security_group" "loadbalancer_security_group" {
   }
 
   egress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -60,8 +53,8 @@ resource "aws_security_group" "ecs_security_group" {
 
   ingress {
     protocol        = "tcp"
-    from_port       = "80"
-    to_port         = "82"
+    from_port       = "4444"
+    to_port         = "4444"
     security_groups = ["${aws_security_group.loadbalancer_security_group.id}"]
   }
 
@@ -81,7 +74,7 @@ resource "aws_alb" "main" {
 
 resource "aws_alb_target_group" "app_one" {
   name        = "hub"
-  port        = 80
+  port        = 4444
   protocol    = "HTTP"
   vpc_id      = "${aws_vpc.main.id}"
   target_type = "ip"
@@ -228,3 +221,4 @@ DEFINITION
 # "links": [
 #             "selenium:hub"
 #         ],
+

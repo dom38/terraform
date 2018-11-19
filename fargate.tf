@@ -246,4 +246,8 @@ resource "aws_ecs_service" "ecs-service" {
     container_name   = "selenium"
     container_port   = 4444
   }
+
+  depends_on = [
+    "aws_alb_listener.listener",
+  ]
 }

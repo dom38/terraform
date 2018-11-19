@@ -87,7 +87,7 @@ resource "aws_alb_listener" "listener" {
 
   default_action {
     target_group_arn = "${aws_alb_target_group.app_one.id}"
-    target_type      = "forward"
+    type             = "forward"
   }
 }
 
@@ -237,8 +237,8 @@ resource "aws_ecs_service" "ecs-service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    security_groups = "${aws_security_group.ecs_security_group.id}"
-    subnets         = "${aws_subnet.main.id}"
+    security_groups = ["${aws_security_group.ecs_security_group.id}"]
+    subnets         = ["${aws_subnet.main.id}"]
   }
 
   load_balancer {

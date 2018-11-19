@@ -80,6 +80,17 @@ resource "aws_alb_target_group" "app_one" {
   target_type = "ip"
 }
 
+resource "aws_alb_listener" "listener" {
+  load_balancer_arn = "${aws_alb.main.id}"
+  port              = "4444"
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = "${aws_alb_target_group.app_one.id}"
+    target_type      = "forward"
+  }
+}
+
 resource "aws_ecs_cluster" "main" {
   name = "selenium-cluster"
 }
@@ -218,7 +229,21 @@ resource "aws_ecs_task_definition" "app" {
 DEFINITION
 }
 
-# "links": [
-#             "selenium:hub"
-#         ],
+resource "aws_ecs_service" "ecs-service" {
+  name            = "selenium-service"
+  cluster         = "${aws_ecs_cluster.main.id}"
+  task_definition = "${aws_ecs_task_definition.app.arn}"
+  desired_count   = 1
+  launch_type     = "FARGATE"
 
+  network_configuration {
+    security_groups = "${aws_security_group.ecs_security_group.id}"
+    subnets         = "${aws_subnet.main.id}"
+  }
+
+  load_balancer {
+    target_group_arn = "${aws_alb_target_group.app_one.id}"
+    container_name   = "selenium"
+    container_port   = 4444
+  }
+}
